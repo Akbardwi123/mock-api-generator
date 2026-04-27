@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(uuid())
+  clerkId   String      @unique
+  email     String      @unique
+  tier      Tier        @default(FREE)
+  workspaces Workspace[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Workspace {
+  id        String      @id @default(uuid())
+  name      String
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  endpoints Endpoint[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Endpoint {
+  id          String       @id @default(uuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id])
+  method      String       // GET, POST, PUT, DELETE, PATCH
+  path        String       // contoh: /api/users
+  statusCode  Int          @default(200)
+  responseBody String      // Disimpan sebagai JSON string
+  delay       Int          @default(0) // Penundaan dalam milidetik
+  logs        RequestLog[] // Hanya tersedia untuk tier Pro/Team
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([workspaceId, method, path]) // Memastikan tidak ada rute duplikat dalam workspace yang sama
+}
+
+model RequestLog {
+  id          String   @id @default(uuid())
+  endpointId  String
+  endpoint    Endpoint @relation(fields: [endpointId], references: [id])
+  method      String
+  headers     String   // JSON string dari incoming headers
+  body        String?  // JSON string dari incoming payload
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}
+
+enum Tier {
+  FREE
+  PRO
+  TEAM
+}
