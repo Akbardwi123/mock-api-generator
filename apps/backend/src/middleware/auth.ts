@@ -1,17 +1,36 @@
 import { Request, Response, NextFunction } from "express";
-import { requireAuth } from "@clerk/express";
+import { verifyToken } from "@clerk/express";
 import { prisma } from "../lib/prisma";
 
 /**
- * Middleware: Memastikan user sudah login via Clerk,
+ * Middleware: Memverifikasi JWT token dari Clerk,
  * lalu mencari atau membuat data User di database kita.
  * Hasilnya ditempelkan ke req.dbUser agar route handler bisa langsung pakai.
  */
 export const authenticateAndSync = [
-  requireAuth(),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const clerkId = req.auth?.userId;
+      // Ambil token dari Authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        res.status(401).json({ error: "Tidak terautentikasi - token tidak ditemukan" });
+        return;
+      }
+
+      const token = authHeader.split(" ")[1];
+
+      // Verifikasi token menggunakan Clerk
+      let clerkId: string;
+      try {
+        const payload = await verifyToken(token, {
+          secretKey: process.env.CLERK_SECRET_KEY!,
+        });
+        clerkId = payload.sub;
+      } catch (verifyError: any) {
+        console.error("Token verification failed:", verifyError.message || verifyError);
+        res.status(401).json({ error: "Token tidak valid" });
+        return;
+      }
 
       if (!clerkId) {
         res.status(401).json({ error: "Tidak terautentikasi" });

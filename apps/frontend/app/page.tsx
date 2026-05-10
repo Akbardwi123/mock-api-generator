@@ -1,21 +1,23 @@
-import { Show, SignInButton, UserButton } from "@clerk/nextjs";
+import { SignInButton, UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 
-export default function Home() {
+export default async function Home() {
+  const { userId } = await auth();
+
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-50">
       <header className="flex items-center justify-between px-8 py-4 border-b border-zinc-200 dark:border-zinc-800">
         <div className="text-xl font-bold tracking-tighter">MockNest</div>
         <div>
-          <Show when="signed-out">
+          {!userId ? (
             <SignInButton mode="modal">
               <button className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 rounded-lg hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 transition-colors">
                 Sign In
               </button>
             </SignInButton>
-          </Show>
-          <Show when="signed-in">
+          ) : (
             <UserButton />
-          </Show>
+          )}
         </div>
       </header>
       <main className="flex-1 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
@@ -36,21 +38,20 @@ export default function Home() {
         </p>
 
         <div className="relative z-10 flex gap-4">
-          <Show when="signed-out">
+          {!userId ? (
             <SignInButton mode="modal">
               <button className="px-8 py-4 text-lg font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-blue-500/30">
                 Mulai Gratis Sekarang
               </button>
             </SignInButton>
-          </Show>
-          <Show when="signed-in">
+          ) : (
             <a
               href="/dashboard"
               className="px-8 py-4 text-lg font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-blue-500/30"
             >
               Masuk ke Dashboard
             </a>
-          </Show>
+          )}
         </div>
       </main>
     </div>

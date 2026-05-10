@@ -13,22 +13,34 @@ interface Workspace {
 }
 
 export default function DashboardPage() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [newName, setNewName] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
-  // Ambil data workspace saat halaman dimuat
+  // Ambil data workspace saat Clerk session sudah ready
   useEffect(() => {
-    loadWorkspaces();
-  }, []);
+    if (!isLoaded) return;
+
+    if (isSignedIn) {
+      loadWorkspaces();
+    } else {
+      // User belum sign in, stop loading
+      console.log("Clerk: user not signed in, isLoaded:", isLoaded, "isSignedIn:", isSignedIn);
+      setLoading(false);
+    }
+  }, [isLoaded, isSignedIn]);
 
   async function loadWorkspaces() {
     try {
       const token = await getToken();
-      const data = await workspaceAPI.getAll(token!);
+      if (!token) {
+        console.error("Token tidak tersedia");
+        return;
+      }
+      const data = await workspaceAPI.getAll(token);
       setWorkspaces(data);
     } catch (err: any) {
       console.error(err.message);
@@ -44,7 +56,8 @@ export default function DashboardPage() {
     setCreating(true);
     try {
       const token = await getToken();
-      await workspaceAPI.create(newName.trim(), token!);
+      if (!token) return;
+      await workspaceAPI.create(newName.trim(), token);
       setNewName("");
       setShowForm(false);
       await loadWorkspaces();
@@ -60,7 +73,8 @@ export default function DashboardPage() {
 
     try {
       const token = await getToken();
-      await workspaceAPI.delete(id, token!);
+      if (!token) return;
+      await workspaceAPI.delete(id, token);
       await loadWorkspaces();
     } catch (err: any) {
       alert(err.message);

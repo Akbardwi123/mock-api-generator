@@ -9,6 +9,7 @@ dotenv.config();
 import workspaceRoutes from "./routes/workspace";
 import endpointRoutes from "./routes/endpoint";
 import mockRoutes from "./routes/mock";
+import { clerkMiddleware } from "@clerk/express";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -19,6 +20,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(clerkMiddleware());
 
 // ── Health Check ──
 app.get("/", (req, res) => {
